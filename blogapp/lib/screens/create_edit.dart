@@ -1,5 +1,9 @@
-import 'package:blogapp/services/api_service.dart';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:image_picker_web/image_picker_web.dart';
+import 'dart:typed_data';
+import 'package:blogapp/services/api_service.dart';
 
 class CreateEditBlogPost extends StatefulWidget {
   final int? id;
@@ -16,6 +20,8 @@ class _CreateEditBlogPostState extends State<CreateEditBlogPost> {
   final ApiService apiService = ApiService();
   final TextEditingController titleController = TextEditingController();
   final TextEditingController contentController = TextEditingController();
+  Uint8List? _imageData;
+  String? _imageName;
 
   @override
   void initState() {
@@ -26,11 +32,21 @@ class _CreateEditBlogPostState extends State<CreateEditBlogPost> {
     }
   }
 
+  Future<void> _pickImage() async {
+    final imageFile = await ImagePickerWeb.getImageAsBytes();
+    if (imageFile != null) {
+      setState(() {
+        _imageData = imageFile;
+        _imageName = 'uploaded_image.png'; // You can also get the original filename if needed
+      });
+    }
+  }
+
   Future<void> saveBlogPost() async {
     if (widget.id == null) {
-      await apiService.createBlogPost(titleController.text, contentController.text);
+      await apiService.createBlogPost(titleController.text, contentController.text, _imageData as File, _imageName);
     } else {
-      await apiService.updateBlogPost(widget.id!, titleController.text, contentController.text);
+      await apiService.updateBlogPost(widget.id!, titleController.text, contentController.text, _imageData, _imageName);
     }
     Navigator.pop(context);
   }
@@ -53,6 +69,14 @@ class _CreateEditBlogPostState extends State<CreateEditBlogPost> {
             TextField(
               controller: contentController,
               decoration: InputDecoration(labelText: 'Content'),
+            ),
+            SizedBox(height: 16),
+            _imageData == null
+                ? Text('No image selected.')
+                : Image.memory(_imageData!),
+            ElevatedButton(
+              onPressed: _pickImage,
+              child: Text('Pick Image'),
             ),
             SizedBox(height: 16),
             ElevatedButton(

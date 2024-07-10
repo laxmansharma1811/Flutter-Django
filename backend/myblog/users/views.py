@@ -1,4 +1,3 @@
-from django.shortcuts import render
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -30,12 +29,6 @@ class CustomTokenRefreshView(TokenRefreshView):
     permission_classes = (AllowAny,)
 
 
-
-class BlogPostViewSet(viewsets.ModelViewSet):
-    queryset = BlogPost.objects.all()
-    serializer_class = BlogPostSerializer
-
-
 class LogoutView(APIView):
     permission_classes = (IsAuthenticated,)
 
@@ -47,3 +40,8 @@ class LogoutView(APIView):
             return Response(status=205)
         except Exception as e:
             return Response(status=400)
+        
+
+class BlogPostViewSet(viewsets.ModelViewSet):
+    queryset = BlogPost.objects.all()
+    serializer_class = BlogPostSerializer

@@ -1,6 +1,9 @@
 import 'dart:convert';
+import 'dart:io';
+import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:http_parser/http_parser.dart';
 
 class ApiService {
   final String baseUrl = 'http://127.0.0.1:8000/api';
@@ -33,28 +36,40 @@ class ApiService {
     await storage.deleteAll();
   }
   
-  // CRUD 
-   Future<http.Response> getBlogPosts() async {
+  Future<http.Response> getBlogPosts() async {
     final response = await http.get(Uri.parse('$baseUrl/blogposts/'));
     return response;
   }
 
-  Future<http.Response> createBlogPost(String title, String content) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/blogposts/'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'title': title, 'content': content}),
-    );
-    return response;
+  Future<http.Response> createBlogPost(String title, String content, File imageFile, String? imageName) async {
+    var uri = Uri.parse('$baseUrl/blogposts/');
+    var request = http.MultipartRequest('POST', uri)
+      ..fields['title'] = title
+      ..fields['content'] = content;
+    
+    var multipartFile = await http.MultipartFile.fromPath('image', imageFile.path);
+    request.files.add(multipartFile);
+
+    var response = await request.send();
+    return await http.Response.fromStream(response);
   }
 
-  Future<http.Response> updateBlogPost(int id, String title, String content) async {
-    final response = await http.put(
-      Uri.parse('$baseUrl/blogposts/$id/'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'title': title, 'content': content}),
-    );
-    return response;
+  Future<http.Response> updateBlogPost(int id, String title, String content, Uint8List? imageData, String? imageName) async {
+    var uri = Uri.parse('$baseUrl/blogposts/$id/');
+    var request = http.MultipartRequest('PUT', uri)
+      ..fields['title'] = title
+      ..fields['content'] = content;
+    if (imageData != null && imageName != null) {
+      var multipartFile = http.MultipartFile.fromBytes(
+        'image',
+        imageData,
+        filename: imageName,
+        contentType: MediaType('image', 'jpeg'),
+      );
+      request.files.add(multipartFile);
+    }
+    var response = await request.send();
+    return await http.Response.fromStream(response);
   }
 
   Future<http.Response> deleteBlogPost(int id) async {

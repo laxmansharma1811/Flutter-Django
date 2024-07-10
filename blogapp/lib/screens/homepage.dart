@@ -1,8 +1,7 @@
 import 'package:blogapp/screens/create_edit.dart';
-import 'package:blogapp/services/api_service.dart';
 import 'package:flutter/material.dart';
 import 'dart:convert';
-
+import 'package:blogapp/services/api_service.dart';
 
 class Homepage extends StatefulWidget {
   @override
@@ -26,7 +25,23 @@ class _HomepageState extends State<Homepage> {
         blogPosts = jsonDecode(response.body);
       });
     } else {
-      // Handle error
+      showDialog(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: Text('Error'),
+            content: Text('Failed to fetch blog posts'),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+                child: Text('OK'),
+              ),
+            ],
+          );
+        },
+      );
     }
   }
 
@@ -35,7 +50,23 @@ class _HomepageState extends State<Homepage> {
     if (response.statusCode == 204) {
       fetchBlogPosts();
     } else {
-      // Handle error
+      showDialog(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: Text('Error'),
+            content: Text('Failed to delete blog post'),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+                child: Text('OK'),
+              ),
+            ],
+          );
+        },
+      );
     }
   }
 
@@ -45,59 +76,94 @@ class _HomepageState extends State<Homepage> {
       appBar: AppBar(
         title: const Text('Blog Posts'),
         backgroundColor: Colors.blue,
-        leading: IconButton(
-          icon: Icon(Icons.logout),
-          onPressed: () {
-            Navigator.pop(context);
-            print('Logged out Successfully!');
-          },
-        )
+        actions: [
+          IconButton(
+            icon: Icon(Icons.logout),
+            onPressed: () {
+              Navigator.pop(context);
+              print('Logged out Successfully!');
+            },
+          ),
+        ],
+      ),
+      drawer: Drawer(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            UserAccountsDrawerHeader(
+              accountName: Text("User Name"),
+              accountEmail: Text("user@example.com"),
+              currentAccountPicture: CircleAvatar(
+                backgroundColor: Colors.white,
+                child: Text(
+                  "U",
+                  style: TextStyle(fontSize: 40.0),
+                ),
+              ),
+              decoration: BoxDecoration(
+                color: Colors.blue,
+              ),
+            ),
+            ListTile(
+              leading: Icon(Icons.add),
+              title: Text('Add Blog'),
+              onTap: () async {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => CreateEditBlogPost(),
+                  ),
+                );
+                fetchBlogPosts();
+              },
+            ),
+          ],
+        ),
       ),
       body: ListView.builder(
         itemCount: blogPosts.length,
         itemBuilder: (context, index) {
           final post = blogPosts[index];
-          return ListTile(
-            title: Text(post['title']),
-            subtitle: Text(post['content']),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
+          return Card(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                IconButton(
-                  icon: Icon(Icons.edit),
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => CreateEditBlogPost(
-                          id: post['id'],
-                          title: post['title'],
-                          content: post['content'],
-                        ),
+                if (post['image'] != null)
+                  Image.network('http://127.0.0.1:8000${post['image']}'), // Replace with your actual backend URL
+                ListTile(
+                  title: Text(post['title']),
+                  subtitle: Text(post['content']),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: Icon(Icons.edit),
+                        onPressed: () async {
+                          await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => CreateEditBlogPost(
+                                id: post['id'],
+                                title: post['title'],
+                                content: post['content'],
+                              ),
+                            ),
+                          );
+                          fetchBlogPosts();
+                        },
                       ),
-                    ).then((value) => fetchBlogPosts());
-                  },
-                ),
-                IconButton(
-                  icon: Icon(Icons.delete),
-                  onPressed: () {
-                    deleteBlogPost(post['id']);
-                  },
+                      IconButton(
+                        icon: Icon(Icons.delete),
+                        onPressed: () {
+                          deleteBlogPost(post['id']);
+                        },
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
           );
-        },
-      ),
-      floatingActionButton: FloatingActionButton(
-        child: Icon(Icons.add),
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => CreateEditBlogPost(),
-            ),
-          ).then((value) => fetchBlogPosts());
         },
       ),
     );
